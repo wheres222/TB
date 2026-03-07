@@ -55,6 +55,24 @@ class AdminCommands(commands.Cog):
                 ephemeral=True
             )
 
+    @app_commands.command(name="vcpanel")
+    async def vcpanel_command(self, interaction: discord.Interaction):
+        """Rebuild/repost VC summarizer control message (ADMIN ONLY)."""
+        await interaction.response.defer(ephemeral=True)
+
+        if not interaction.guild:
+            await interaction.followup.send("❌ Use this in a server.", ephemeral=True)
+            return
+
+        try:
+            message = await self.bot.ensure_vc_control_message(interaction.guild)
+            await interaction.followup.send(
+                f"✅ VC control panel is ready in {message.channel.mention}",
+                ephemeral=True,
+            )
+        except Exception as e:
+            await interaction.followup.send(f"❌ Failed to rebuild VC panel: {e}", ephemeral=True)
+
     @app_commands.command(name="botstats")
     async def botstats_command(self, interaction: discord.Interaction):
         """View bot statistics (ADMIN ONLY)."""
