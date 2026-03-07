@@ -355,7 +355,6 @@ class VCSummaryControlView(discord.ui.View):
     @discord.ui.button(
         label="Start Listening",
         style=discord.ButtonStyle.success,
-        emoji="â–¶ï¸",
         custom_id="vc_summary:start"
     )
     async def start_listening(
@@ -368,7 +367,6 @@ class VCSummaryControlView(discord.ui.View):
     @discord.ui.button(
         label="Stop Listening",
         style=discord.ButtonStyle.danger,
-        emoji="â¹ï¸",
         custom_id="vc_summary:stop"
     )
     async def stop_listening(
