@@ -1,4 +1,4 @@
-﻿"""
+"""
 ============================================================================
 TENBOT - Ultra Discord Bot for Business Communities
 ============================================================================
@@ -131,12 +131,12 @@ def build_vc_channel_overwrites(guild: discord.Guild) -> dict:
 
 def build_vc_status_embed(session: dict) -> discord.Embed:
     is_active = bool(session.get("active"))
-    status_text = "ðŸŸ¢ Currently Listening" if is_active else "âšª Currently Idle"
+    status_text = "🟢 Currently Listening" if is_active else "⚪ Currently Idle"
     description = (
         "Click the buttons below to manage the AI summarization for the current voice call."
     )
     embed = discord.Embed(
-        title="ðŸŽ§ Voice Channel Summarizer",
+        title="🎧 Voice Channel Summarizer",
         description=description,
         color=discord.Color.green() if is_active else discord.Color.dark_gray()
     )
@@ -149,7 +149,7 @@ async def generate_vc_summary(messages: list[str], transcript_lines: list[str]) 
     combined_lines = combined_lines[-400:]
     if not combined_lines:
         return discord.Embed(
-            title="ðŸ“ Voice Call Summary",
+            title=" Voice Call Summary",
             description="No messages captured from participants during this session.",
             color=discord.Color.blue()
         )
@@ -181,20 +181,20 @@ async def generate_vc_summary(messages: list[str], transcript_lines: list[str]) 
                     summary = data["choices"][0]["message"]["content"]
 
             return discord.Embed(
-                title="ðŸ“ Voice Call Summary",
+                title=" Voice Call Summary",
                 description=summary,
                 color=discord.Color.blue()
             )
         except Exception as e:
             return discord.Embed(
-                title="ðŸ“ Voice Call Summary",
+                title=" Voice Call Summary",
                 description=f"AI summary failed: {e}",
                 color=discord.Color.red()
             )
 
-    fallback = "\n".join(f"â€¢ {line}" for line in combined_lines[-10:])
+    fallback = "\n".join(f"• {line}" for line in combined_lines[-10:])
     return discord.Embed(
-        title="ðŸ“ Voice Call Summary (Fallback)",
+        title=" Voice Call Summary (Fallback)",
         description=fallback,
         color=discord.Color.blue()
     )
@@ -413,7 +413,7 @@ class TenBot(commands.Bot):
         Called when bot is setting up.
         Initialize database and modules here.
         """
-        print("ðŸš€ Setting up TENBOT...")
+        print("🚀 Setting up TENBOT...")
 
         # Initialize database
         self.db = Database()
@@ -428,18 +428,18 @@ class TenBot(commands.Bot):
         self.analytics_system = get_analytics_system()
         self.enhanced_gamification = get_enhanced_gamification()
 
-        print("âœ… All modules initialized!")
+        print("✅ All modules initialized!")
 
         # Load command cogs
-        print("ðŸ“¦ Loading command cogs...")
+        print("📦 Loading command cogs...")
 
         # Load moderation commands
         try:
             from commands.mod_commands import ModerationCommands
             await self.add_cog(ModerationCommands(self), override=True)
-            print("  âœ… ModerationCommands loaded")
+            print("  ✅ ModerationCommands loaded")
         except Exception as e:
-            print(f"  âŒ Failed to load ModerationCommands: {e}")
+            print(f"   Failed to load ModerationCommands: {e}")
             import traceback
             traceback.print_exc()
 
@@ -449,9 +449,9 @@ class TenBot(commands.Bot):
         try:
             from commands.admin_commands import AdminCommands
             await self.add_cog(AdminCommands(self), override=True)
-            print("  âœ… AdminCommands loaded")
+            print("  ✅ AdminCommands loaded")
         except Exception as e:
-            print(f"  âŒ Failed to load AdminCommands: {e}")
+            print(f"   Failed to load AdminCommands: {e}")
             import traceback
             traceback.print_exc()
 
@@ -459,9 +459,9 @@ class TenBot(commands.Bot):
         try:
             from commands.analytics_commands import AnalyticsReputationCommands
             await self.add_cog(AnalyticsReputationCommands(self), override=True)
-            print("  âœ… AnalyticsReputationCommands loaded")
+            print("  ✅ AnalyticsReputationCommands loaded")
         except Exception as e:
-            print(f"  âŒ Failed to load AnalyticsReputationCommands: {e}")
+            print(f"   Failed to load AnalyticsReputationCommands: {e}")
             import traceback
             traceback.print_exc()
 
@@ -469,32 +469,32 @@ class TenBot(commands.Bot):
         try:
             from commands.gamification_commands import GamificationCommands
             await self.add_cog(GamificationCommands(self), override=True)
-            print("  âœ… GamificationCommands loaded")
+            print("  ✅ GamificationCommands loaded")
         except Exception as e:
-            print(f"  âŒ Failed to load GamificationCommands: {e}")
+            print(f"   Failed to load GamificationCommands: {e}")
             import traceback
             traceback.print_exc()
 
         # Load compatible legacy phase-2 modules
         try:
-            print("ðŸ§© Loading legacy phase-2 modules...")
+            print("🧩 Loading legacy phase-2 modules...")
             self.legacy_phase2_modules = await load_phase2_legacy_modules(
                 self,
                 self.db.db,
             )
-            print(f"âœ… Loaded {len(self.legacy_phase2_modules)} legacy phase-2 module(s)")
+            print(f"✅ Loaded {len(self.legacy_phase2_modules)} legacy phase-2 module(s)")
         except Exception as e:
-            print(f"âŒ Failed loading legacy phase-2 modules: {e}")
+            print(f" Failed loading legacy phase-2 modules: {e}")
             import traceback
             traceback.print_exc()
-        print("âœ… Finished loading command cogs!")
+        print("✅ Finished loading command cogs!")
 
         # Sync slash commands
         try:
             synced = await self.tree.sync()
-            print(f"âœ… Synced {len(synced)} slash commands globally!")
+            print(f"✅ Synced {len(synced)} slash commands globally!")
         except Exception as e:
-            print(f"âŒ Failed to sync commands: {e}")
+            print(f" Failed to sync commands: {e}")
             import traceback
             traceback.print_exc()
 
@@ -536,12 +536,12 @@ class TenBot(commands.Bot):
 
     async def start_vc_session(self, interaction: discord.Interaction):
         if not interaction.guild:
-            await interaction.response.send_message("âŒ Use this in a server.", ephemeral=True)
+            await interaction.response.send_message(" Use this in a server.", ephemeral=True)
             return
 
         if not VC_SUPPORTED:
             await interaction.response.send_message(
-                "âŒ Voice summarizer unavailable. Install discord-ext-voice-recv and configure either local faster-whisper or Deepgram API.",
+                " Voice summarizer unavailable. Install discord-ext-voice-recv and configure either local faster-whisper or Deepgram API.",
                 ephemeral=True
             )
             return
@@ -549,7 +549,7 @@ class TenBot(commands.Bot):
         voice_state = interaction.user.voice
         if not voice_state or not voice_state.channel:
             await interaction.response.send_message(
-                "âŒ Join a voice channel first.",
+                " Join a voice channel first.",
                 ephemeral=True
             )
             return
@@ -561,7 +561,7 @@ class TenBot(commands.Bot):
         session = self.vc_sessions.get(guild.id, {})
 
         if session.get("active"):
-            await interaction.followup.send("âœ… Already listening.", ephemeral=True)
+            await interaction.followup.send("✅ Already listening.", ephemeral=True)
             return
 
         voice_client = discord.utils.get(self.voice_clients, guild=guild)
@@ -587,11 +587,11 @@ class TenBot(commands.Bot):
         self.vc_sessions[guild.id] = session
 
         await self.ensure_vc_control_message(guild)
-        await interaction.followup.send("âœ… Started listening.", ephemeral=True)
+        await interaction.followup.send("✅ Started listening.", ephemeral=True)
 
     async def stop_vc_session(self, interaction: discord.Interaction):
         if not interaction.guild:
-            await interaction.response.send_message("âŒ Use this in a server.", ephemeral=True)
+            await interaction.response.send_message(" Use this in a server.", ephemeral=True)
             return
 
         await interaction.response.defer(ephemeral=True)
@@ -599,7 +599,7 @@ class TenBot(commands.Bot):
         session = self.vc_sessions.get(guild.id, {})
 
         if not session.get("active"):
-            await interaction.followup.send("âœ… Already idle.", ephemeral=True)
+            await interaction.followup.send("✅ Already idle.", ephemeral=True)
             return
 
         voice_client = discord.utils.get(self.voice_clients, guild=guild)
@@ -638,16 +638,16 @@ class TenBot(commands.Bot):
         if auto_delete_minutes > 0:
             asyncio.create_task(delete_message_later(summary_message, auto_delete_minutes * 60))
 
-        await interaction.followup.send("âœ… Stopped listening and posted summary.", ephemeral=True)
+        await interaction.followup.send("✅ Stopped listening and posted summary.", ephemeral=True)
 
     async def on_ready(self):
         """
         Called when bot is fully ready and connected.
         """
         print("=" * 60)
-        print(f"âœ… {self.user.name} is online!")
-        print(f"ðŸ“Š Connected to {len(self.guilds)} server(s)")
-        print(f"ðŸ‘¥ Monitoring {sum(g.member_count for g in self.guilds)} users")
+        print(f"✅ {self.user.name} is online!")
+        print(f"📊 Connected to {len(self.guilds)} server(s)")
+        print(f"👥 Monitoring {sum(g.member_count for g in self.guilds)} users")
         print("=" * 60)
 
         # Start background tasks
@@ -670,13 +670,13 @@ class TenBot(commands.Bot):
             try:
                 await self.ensure_vc_control_message(guild)
             except Exception as e:
-                print(f"âŒ Failed to set VC control message in {guild.name}: {e}")
+                print(f" Failed to set VC control message in {guild.name}: {e}")
 
     async def close(self):
         """
         Cleanup when bot shuts down.
         """
-        print("ðŸ›‘ Shutting down...")
+        print("🛑 Shutting down...")
 
         if self.db:
             await self.db.close()
@@ -706,9 +706,9 @@ async def backup_database():
     try:
         db = await get_db()
         await db.backup()
-        print(f"ðŸ’¾ Database backed up at {datetime.now().strftime('%H:%M:%S')}")
+        print(f"💾 Database backed up at {datetime.now().strftime('%H:%M:%S')}")
     except Exception as e:
-        print(f"âŒ Backup failed: {e}")
+        print(f" Backup failed: {e}")
 
 
 @tasks.loop(hours=24)
@@ -723,9 +723,9 @@ async def cleanup_old_data():
         # Vacuum database to reclaim space
         await db.execute("VACUUM")
 
-        print(f"ðŸ§¹ Database cleanup completed at {datetime.now().strftime('%H:%M:%S')}")
+        print(f"🧹 Database cleanup completed at {datetime.now().strftime('%H:%M:%S')}")
     except Exception as e:
-        print(f"âŒ Cleanup failed: {e}")
+        print(f" Cleanup failed: {e}")
 
 
 @tasks.loop(hours=6)
@@ -760,9 +760,9 @@ async def update_reputation_scores():
                 except:
                     continue
 
-        print(f"ðŸ† Updated reputation for {len(active_users)} active users")
+        print(f" Updated reputation for {len(active_users)} active users")
     except Exception as e:
-        print(f"âŒ Reputation update failed: {e}")
+        print(f" Reputation update failed: {e}")
 
 
 @tasks.loop(hours=12)
@@ -796,9 +796,9 @@ async def update_trust_scores():
                 except:
                     continue
 
-        print(f"ðŸ”’ Updated trust scores for {len(active_users)} active users")
+        print(f"🔒 Updated trust scores for {len(active_users)} active users")
     except Exception as e:
-        print(f"âŒ Trust update failed: {e}")
+        print(f" Trust update failed: {e}")
 
 
 @tasks.loop(hours=1)
@@ -835,11 +835,11 @@ async def check_daily_streaks():
                         """,
                         (user_id,)
                     )
-                    print(f"ðŸ’” Streak broken for user {user_id}")
+                    print(f"💔 Streak broken for user {user_id}")
 
-        print(f"ðŸ”¥ Checked streaks for {len(users_with_streaks)} users")
+        print(f"🔥 Checked streaks for {len(users_with_streaks)} users")
     except Exception as e:
-        print(f"âŒ Streak check failed: {e}")
+        print(f" Streak check failed: {e}")
 
 
 # ============================================================================
@@ -874,7 +874,7 @@ async def on_member_join(member: discord.Member):
         details={'username': member.name}
     )
 
-    print(f"ðŸ‘‹ {member.name} joined the server")
+    print(f"👋 {member.name} joined the server")
 
 
 @bot.event
@@ -955,7 +955,7 @@ async def on_message(message: discord.Message):
             try:
                 await bot.enhanced_gamification.check_milestones(user_id)
             except Exception as e:
-                print(f"⚠️ check_milestones failed for {user_id}: {e}")
+                print(f" check_milestones failed for {user_id}: {e}")
 
     # Process commands
     await bot.process_commands(message)
@@ -1056,7 +1056,7 @@ async def on_voice_state_update(
                     try:
                         await bot.enhanced_gamification.check_milestones(user_id)
                     except Exception as e:
-                        print(f"⚠️ check_milestones failed for {user_id}: {e}")
+                        print(f" check_milestones failed for {user_id}: {e}")
 
 
 # ============================================================================
@@ -1131,14 +1131,14 @@ async def check_and_award_badges(user: discord.Member, guild: discord.Guild):
     for badge_key in badges_to_award:
         try:
             await bot.enhanced_gamification.award_badge(user_id, badge_key)
-            print(f"ðŸ… Awarded badge '{badge_key}' to {user.name}")
+            print(f" Awarded badge '{badge_key}' to {user.name}")
 
             # Optionally notify user
             badge = bot.enhanced_gamification.BADGES.get(badge_key)
             if badge:
                 await send_badge_notification(user, guild, badge)
         except Exception as e:
-            print(f"âš ï¸  Error awarding badge: {e}")
+            print(f"⚠  Error awarding badge: {e}")
 
 
 async def has_badge(user_id: str, badge_key: str) -> bool:
@@ -1166,7 +1166,7 @@ async def send_badge_notification(
     }
 
     embed = create_embed(
-        title="ðŸ… New Badge Earned!",
+        title=" New Badge Earned!",
         description=f"{user.mention} earned the **{badge['name']}** badge!\n\n"
                    f"*{badge['description']}*",
         color=rarity_colors.get(badge['rarity'], discord.Color.blue())
@@ -1209,9 +1209,9 @@ async def handle_spam(
     # Delete the message
     try:
         await message.delete()
-        print(f"ðŸ—‘ï¸  Deleted spam from {message.author.name}: {reason}")
+        print(f"🗑  Deleted spam from {message.author.name}: {reason}")
     except discord.Forbidden:
-        print(f"âš ï¸  Cannot delete message (missing permissions)")
+        print(f"⚠  Cannot delete message (missing permissions)")
         return
 
     # Mark message as spam in database
@@ -1268,7 +1268,7 @@ async def handle_spam(
                 reason=f"Spam warning #{new_warning_count}: {reason}"
             )
         except discord.Forbidden:
-            print(f"âš ï¸  Cannot timeout {message.author.name} (missing permissions)")
+            print(f"⚠  Cannot timeout {message.author.name} (missing permissions)")
 
     # Auto-ban if threshold reached
     elif new_warning_count >= config.AUTO_BAN_THRESHOLD:
@@ -1276,11 +1276,11 @@ async def handle_spam(
             await message.author.ban(reason=f"Auto-ban: {new_warning_count} warnings")
             await db.update_user(user_id, is_banned=True)
         except discord.Forbidden:
-            print(f"âš ï¸  Cannot ban {message.author.name} (missing permissions)")
+            print(f"⚠  Cannot ban {message.author.name} (missing permissions)")
 
     # Send DM to user
     embed = create_embed(
-        title="âš ï¸ Spam Warning",
+        title="⚠ Spam Warning",
         description=f"Your message was removed for violating spam rules.",
         color=discord.Color.red()
     )
@@ -1292,7 +1292,7 @@ async def handle_spam(
 
     if new_warning_count >= config.AUTO_BAN_THRESHOLD - 1:
         embed.add_field(
-            name="âš ï¸ Important",
+            name="⚠ Important",
             value="Next violation will result in automatic ban!",
             inline=False
         )
@@ -1310,13 +1310,13 @@ async def handle_image_spam(message: discord.Message, filename: str, reason: str
     # Delete message
     try:
         await message.delete()
-        print(f"ðŸ–¼ï¸  Deleted spam image from {message.author.name}: {reason}")
+        print(f"🖼  Deleted spam image from {message.author.name}: {reason}")
     except:
         pass
 
     # Warn user
     embed = create_embed(
-        title="ðŸ–¼ï¸ Spam Image Detected",
+        title="🖼 Spam Image Detected",
         description=f"Your image was removed.",
         color=discord.Color.red()
     )
@@ -1389,7 +1389,7 @@ async def handle_xp_gain(
         try:
             await bot.enhanced_gamification.check_milestones(user_id)
         except Exception as e:
-            print(f"⚠️ check_milestones failed for {user_id}: {e}")
+            print(f" check_milestones failed for {user_id}: {e}")
 
     # Check for badges based on activity
     await check_and_award_badges(user, guild)
@@ -1410,7 +1410,7 @@ async def handle_level_up(
         old_level: Previous level
         new_level: New level
     """
-    print(f"ðŸŽ‰ {user.name} leveled up: {old_level} â†’ {new_level}")
+    print(f"🎉 {user.name} leveled up: {old_level} → {new_level}")
 
     # Check for level role rewards
     if new_level in config.LEVEL_ROLES:
@@ -1421,11 +1421,11 @@ async def handle_level_up(
             try:
                 await user.add_roles(role)
             except discord.Forbidden:
-                print(f"âš ï¸  Cannot assign role {role_name} (missing permissions)")
+                print(f"⚠  Cannot assign role {role_name} (missing permissions)")
 
     # Send level up message
     embed = create_embed(
-        title="ðŸŽ‰ Level Up!",
+        title="🎉 Level Up!",
         description=f"{user.mention} reached **Level {new_level}**!",
         color=discord.Color.gold()
     )
@@ -1462,33 +1462,33 @@ async def stats_command(interaction: discord.Interaction, user: discord.Member =
 
     if not profile:
         await interaction.response.send_message(
-            "âŒ User not found in database.",
+            " User not found in database.",
             ephemeral=True
         )
         return
 
     # Create embed
     embed = create_embed(
-        title=f"ðŸ“Š Stats - {target.display_name}",
+        title=f"📊 Stats - {target.display_name}",
         color=discord.Color.blue()
     )
     embed.set_thumbnail(url=target.display_avatar.url)
 
     # Basic stats
     embed.add_field(
-        name="ðŸ“ Messages",
+        name=" Messages",
         value=f"{profile.get('total_messages', 0):,}",
         inline=True
     )
 
     embed.add_field(
-        name="â¤ï¸ Reactions",
+        name=" Reactions",
         value=f"{profile.get('total_reactions_received', 0):,}",
         inline=True
     )
 
     embed.add_field(
-        name="ðŸŽ¤ Voice Time",
+        name="🎤 Voice Time",
         value=f"{profile.get('total_voice_minutes', 0):.0f}m",
         inline=True
     )
@@ -1496,19 +1496,19 @@ async def stats_command(interaction: discord.Interaction, user: discord.Member =
     # Gamification
     if config.FEATURES['gamification'] and profile.get('total_xp'):
         embed.add_field(
-            name="â­ Level",
+            name=" Level",
             value=str(profile.get('current_level', 1)),
             inline=True
         )
 
         embed.add_field(
-            name="ðŸ’Ž XP",
+            name="💎 XP",
             value=f"{profile.get('total_xp', 0):,}",
             inline=True
         )
 
         embed.add_field(
-            name="ðŸ”¥ Streak",
+            name="🔥 Streak",
             value=f"{profile.get('current_streak_days', 0)} days",
             inline=True
         )
@@ -1519,7 +1519,7 @@ async def stats_command(interaction: discord.Interaction, user: discord.Member =
         trust_tier = profile.get('trust_tier', 'new')
 
         embed.add_field(
-            name="ðŸ›¡ï¸ Trust Score",
+            name="🛡 Trust Score",
             value=f"{trust_score:.1f}/100 ({trust_tier})",
             inline=True
         )
@@ -1528,7 +1528,7 @@ async def stats_command(interaction: discord.Interaction, user: discord.Member =
     warnings = profile.get('active_warnings', 0)
     if warnings > 0:
         embed.add_field(
-            name="âš ï¸ Warnings",
+            name="⚠ Warnings",
             value=str(warnings),
             inline=True
         )
@@ -1543,7 +1543,7 @@ async def rank_command(interaction: discord.Interaction, user: discord.Member = 
     """
     if not config.FEATURES['gamification']:
         await interaction.response.send_message(
-            "âŒ Gamification is disabled.",
+            " Gamification is disabled.",
             ephemeral=True
         )
         return
@@ -1560,7 +1560,7 @@ async def rank_command(interaction: discord.Interaction, user: discord.Member = 
 
     if not data:
         await interaction.response.send_message(
-            "âŒ No data found.",
+            " No data found.",
             ephemeral=True
         )
         return
@@ -1577,14 +1577,14 @@ async def rank_command(interaction: discord.Interaction, user: discord.Member = 
 
     # Create embed
     embed = create_embed(
-        title=f"ðŸ“Š Rank - {target.display_name}",
+        title=f"📊 Rank - {target.display_name}",
         color=discord.Color.blue()
     )
     embed.set_thumbnail(url=target.display_avatar.url)
 
     embed.add_field(
         name="Level",
-        value=f"â­ {current_level}",
+        value=f" {current_level}",
         inline=True
     )
 
@@ -1596,7 +1596,7 @@ async def rank_command(interaction: discord.Interaction, user: discord.Member = 
 
     embed.add_field(
         name="Streak",
-        value=f"ðŸ”¥ {data['current_streak_days']}d",
+        value=f"🔥 {data['current_streak_days']}d",
         inline=True
     )
 
@@ -1616,7 +1616,7 @@ async def leaderboard_command(interaction: discord.Interaction):
     """
     if not config.FEATURES['gamification']:
         await interaction.response.send_message(
-            "âŒ Gamification is disabled.",
+            " Gamification is disabled.",
             ephemeral=True
         )
         return
@@ -1625,17 +1625,17 @@ async def leaderboard_command(interaction: discord.Interaction):
     top_users = await db.get_leaderboard(limit=10)
 
     embed = create_embed(
-        title="ðŸ† Leaderboard",
+        title=" Leaderboard",
         description="Top 10 members by XP",
         color=discord.Color.gold()
     )
 
     for i, user_data in enumerate(top_users, 1):
-        medal = "ðŸ¥‡" if i == 1 else "ðŸ¥ˆ" if i == 2 else "ðŸ¥‰" if i == 3 else f"{i}."
+        medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}."
 
         embed.add_field(
             name=f"{medal} {user_data.get('display_name', 'Unknown')}",
-            value=f"Level {user_data.get('current_level', 1)} â€¢ {user_data.get('total_xp', 0):,} XP",
+            value=f"Level {user_data.get('current_level', 1)} • {user_data.get('total_xp', 0):,} XP",
             inline=False
         )
 
@@ -1665,12 +1665,12 @@ async def investigate_command(interaction: discord.Interaction, user: discord.Me
     trust_data = await bot.trust_system.get_trust_score(user_id)
 
     if not profile:
-        await interaction.followup.send("âŒ User not found.", ephemeral=True)
+        await interaction.followup.send(" User not found.", ephemeral=True)
         return
 
     # Create detailed embed
     embed = create_embed(
-        title=f"ðŸ” Investigation - {user.display_name}",
+        title=f" Investigation - {user.display_name}",
         description=f"User ID: {user_id}",
         color=discord.Color.orange()
     )
@@ -1681,13 +1681,13 @@ async def investigate_command(interaction: discord.Interaction, user: discord.Me
         trust_tier = trust_data.get('trust_tier', 'unknown')
 
         if trust_score >= 80:
-            status = "ðŸŸ¢ Highly Trusted"
+            status = "🟢 Highly Trusted"
         elif trust_score >= 60:
-            status = "ðŸŸ¡ Trusted"
+            status = "🟡 Trusted"
         elif trust_score >= 40:
-            status = "ðŸŸ  Regular"
+            status = "🟠 Regular"
         else:
-            status = "ðŸ”´ Low Trust"
+            status = "🔴 Low Trust"
 
         embed.add_field(
             name="Trust Status",
@@ -1755,7 +1755,7 @@ async def trust_command(interaction: discord.Interaction, user: discord.Member =
     trust_data = await bot.trust_system.calculate_trust_score(target)
 
     embed = create_embed(
-        title=f"ðŸ›¡ï¸ Trust Score - {target.display_name}",
+        title=f"🛡 Trust Score - {target.display_name}",
         color=discord.Color.blue()
     )
 
@@ -1823,13 +1823,13 @@ async def report_image_command(
 
     if not result['success']:
         await interaction.followup.send(
-            f"âŒ {result['reason']}",
+            f" {result['reason']}",
             ephemeral=True
         )
         return
 
     embed = create_embed(
-        title="âœ… Image Reported",
+        title="✅ Image Reported",
         description="Thank you for helping keep the community safe!",
         color=discord.Color.green()
     )
@@ -1843,7 +1843,7 @@ async def report_image_command(
     if result['auto_blocked']:
         embed.add_field(
             name="Status",
-            value="ðŸš« Auto-blocked (threshold reached)",
+            value="🚫 Auto-blocked (threshold reached)",
             inline=True
         )
         embed.color = discord.Color.red()
@@ -1861,7 +1861,7 @@ async def mod_command_error(interaction: discord.Interaction, error):
     """Handle errors for mod commands."""
     if isinstance(error, app_commands.MissingPermissions):
         await interaction.response.send_message(
-            "âŒ You need Moderate Members permission to use this command!",
+            " You need Moderate Members permission to use this command!",
             ephemeral=True
         )
 
@@ -1877,18 +1877,18 @@ def main():
     # Validate config
     errors = config.validate_config()
     if errors:
-        print("âš ï¸  Configuration Errors:")
+        print("⚠  Configuration Errors:")
         for error in errors:
-            print(f"   âŒ {error}")
+            print(f"    {error}")
         return
 
     # Show startup info
     print("=" * 60)
-    print("ðŸš€ STARTING TENBOT")
+    print("🚀 STARTING TENBOT")
     print("=" * 60)
     print(f"Features Enabled:")
     for feature, enabled in config.FEATURES.items():
-        status = "âœ…" if enabled else "âŒ"
+        status = "✅" if enabled else ""
         print(f"  {status} {feature}")
     print("=" * 60)
 
@@ -1896,10 +1896,10 @@ def main():
     try:
         bot.run(config.BOT_TOKEN)
     except discord.LoginFailure:
-        print("âŒ Invalid bot token!")
+        print(" Invalid bot token!")
         print("   Please set BOT_TOKEN in your .env file")
     except Exception as e:
-        print(f"âŒ Error starting bot: {e}")
+        print(f" Error starting bot: {e}")
 
 
 if __name__ == "__main__":
