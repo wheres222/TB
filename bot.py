@@ -59,7 +59,27 @@ from utils import (
 )
 
 # Determine whether voice summarizer features can run
-VC_SUPPORTED = vr is not None and WhisperModel is not None
+STT_PROVIDER = (getattr(config, "STT_PROVIDER", "local") or "local").lower()
+DEEPGRAM_ENABLED = bool(getattr(config, "DEEPGRAM_API_KEY", ""))
+LOCAL_STT_AVAILABLE = WhisperModel is not None
+
+# Voice receive is always required; transcription can be local or deepgram.
+VC_SUPPORTED = vr is not None and (LOCAL_STT_AVAILABLE or DEEPGRAM_ENABLED)
+
+# Cache local whisper model so we don't re-initialize on every stop.
+_WHISPER_MODEL: Optional[WhisperModel] = None
+
+
+def get_whisper_model() -> Optional[WhisperModel]:
+    global _WHISPER_MODEL
+    if WhisperModel is None:
+        return None
+    if _WHISPER_MODEL is None:
+        _WHISPER_MODEL = WhisperModel(
+            config.VC_TRANSCRIPTION_MODEL,
+            compute_type=config.VC_TRANSCRIPTION_COMPUTE_TYPE
+        )
+    return _WHISPER_MODEL
 
 
 def build_vc_status_embed(session: dict) -> discord.Embed:
@@ -147,40 +167,122 @@ if VC_SUPPORTED:
             buffer.write(data.pcm)
 
 
-async def transcribe_audio_buffers(buffers: dict[int, io.BytesIO]) -> list[str]:
+def pcm_to_wav_bytes(raw_audio: bytes) -> bytes:
+    output = io.BytesIO()
+    with wave.open(output, "wb") as wav_file:
+        wav_file.setnchannels(2)
+        wav_file.setsampwidth(2)
+        wav_file.setframerate(48000)
+        wav_file.writeframes(raw_audio)
+    return output.getvalue()
+
+
+async def transcribe_with_deepgram(wav_bytes: bytes) -> list[str]:
+    api_key = getattr(config, "DEEPGRAM_API_KEY", "")
+    if not api_key:
+        return []
+
+    model = getattr(config, "DEEPGRAM_MODEL", "nova-2") or "nova-2"
+    url = (
+        f"https://api.deepgram.com/v1/listen?model={model}&smart_format=true"
+        "&punctuate=true&utterances=true&diarize=true"
+    )
+
+    headers = {
+        "Authorization": f"Token {api_key}",
+        "Content-Type": "audio/wav",
+    }
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers, data=wav_bytes, timeout=90) as response:
+            if response.status >= 400:
+                error_text = await response.text()
+                raise RuntimeError(f"Deepgram error {response.status}: {error_text[:240]}")
+
+            data = await response.json()
+
+    results = data.get("results", {}) if isinstance(data, dict) else {}
+    utterances = results.get("utterances", [])
+
+    lines: list[str] = []
+    if isinstance(utterances, list) and utterances:
+        for utterance in utterances:
+            text = str((utterance or {}).get("transcript", "")).strip()
+            if text:
+                lines.append(text)
+        return lines
+
+    channels = results.get("channels", [])
+    if channels:
+        alt = (channels[0].get("alternatives") or [{}])[0]
+        text = str(alt.get("transcript", "")).strip()
+        if text:
+            lines.append(text)
+
+    return lines
+
+
+async def transcribe_audio_buffers(
+    buffers: dict[int, io.BytesIO],
+    guild: Optional[discord.Guild] = None,
+) -> list[str]:
     if not buffers or not VC_SUPPORTED:
         return []
 
-    model = WhisperModel(
-        config.VC_TRANSCRIPTION_MODEL,
-        compute_type=config.VC_TRANSCRIPTION_COMPUTE_TYPE
-    )
+    provider = (getattr(config, "STT_PROVIDER", "local") or "local").lower()
     transcript_lines: list[str] = []
+
+    # Auto-fallbacks for reliability
+    use_deepgram = provider == "deepgram" and DEEPGRAM_ENABLED
+    use_local = provider == "local" and LOCAL_STT_AVAILABLE
+
+    if not use_deepgram and not use_local:
+        if DEEPGRAM_ENABLED:
+            use_deepgram = True
+        elif LOCAL_STT_AVAILABLE:
+            use_local = True
+        else:
+            return []
+
+    local_model = get_whisper_model() if use_local else None
 
     for user_id, buffer in buffers.items():
         raw_audio = buffer.getvalue()
         if not raw_audio:
             continue
 
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_wav:
-            with wave.open(temp_wav, "wb") as wav_file:
-                wav_file.setnchannels(2)
-                wav_file.setsampwidth(2)
-                wav_file.setframerate(48000)
-                wav_file.writeframes(raw_audio)
-            temp_path = temp_wav.name
+        member = guild.get_member(user_id) if guild else None
+        speaker = member.display_name if member else f"User {user_id}"
+
+        wav_bytes = pcm_to_wav_bytes(raw_audio)
 
         try:
-            segments, _ = model.transcribe(temp_path, beam_size=5)
-            for segment in segments:
-                text = segment.text.strip()
-                if text:
-                    transcript_lines.append(text)
-        finally:
+            if use_deepgram:
+                texts = await transcribe_with_deepgram(wav_bytes)
+                for text in texts:
+                    transcript_lines.append(f"{speaker}: {text}")
+                continue
+
+            if not local_model:
+                continue
+
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_wav:
+                temp_wav.write(wav_bytes)
+                temp_path = temp_wav.name
+
             try:
-                os.remove(temp_path)
-            except OSError:
-                pass
+                segments, _ = local_model.transcribe(temp_path, beam_size=5)
+                for segment in segments:
+                    text = segment.text.strip()
+                    if text:
+                        transcript_lines.append(f"{speaker}: {text}")
+            finally:
+                try:
+                    os.remove(temp_path)
+                except OSError:
+                    pass
+        except Exception as e:
+            transcript_lines.append(f"{speaker}: [transcription failed: {e}]")
 
     return transcript_lines
 
@@ -377,7 +479,7 @@ class TenBot(commands.Bot):
 
         if not VC_SUPPORTED:
             await interaction.response.send_message(
-                "âŒ Voice summarizer dependencies not installed (discord-ext-voice-recv, faster-whisper).",
+                "âŒ Voice summarizer unavailable. Install discord-ext-voice-recv and configure either local faster-whisper or Deepgram API.",
                 ephemeral=True
             )
             return
@@ -445,7 +547,7 @@ class TenBot(commands.Bot):
 
         transcript_lines = []
         if config.VC_TRANSCRIPTION_ENABLED and sink and VC_SUPPORTED:
-            transcript_lines = await transcribe_audio_buffers(sink.buffers)
+            transcript_lines = await transcribe_audio_buffers(sink.buffers, guild)
 
         session["active"] = False
         self.vc_sessions[guild.id] = session

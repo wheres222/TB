@@ -111,6 +111,26 @@ cp .env.example .env
 nano .env  # or use any text editor
 ```
 
+Recommended `.env` minimum:
+
+```env
+BOT_TOKEN=your_new_bot_token
+
+# Optional AI summary
+GROQ_API_KEY=
+AI_SUMMARY_MODEL=llama-3.1-70b-versatile
+
+# Voice STT
+STT_PROVIDER=local            # local or deepgram
+VC_TRANSCRIPTION_ENABLED=true
+VC_TRANSCRIPTION_MODEL=base
+VC_TRANSCRIPTION_COMPUTE_TYPE=int8
+
+# Only if STT_PROVIDER=deepgram
+DEEPGRAM_API_KEY=
+DEEPGRAM_MODEL=nova-2
+```
+
 ### 3. Configuration
 
 Edit `config.py` to customize:

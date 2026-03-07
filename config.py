@@ -359,10 +359,18 @@ GROQ_API_KEY = os.getenv('GROQ_API_KEY', 'YOUR_GROQ_KEY')
 AI_SUMMARY_MODEL = os.getenv('AI_SUMMARY_MODEL', 'llama-3.1-70b-versatile')
 ENABLE_AI_SUMMARIES = GROQ_API_KEY != 'YOUR_GROQ_KEY'
 
-# VC transcription (local faster-whisper)
+# VC transcription
+# STT_PROVIDER: "local" (faster-whisper) or "deepgram"
+STT_PROVIDER = os.getenv('STT_PROVIDER', 'local').strip().lower()
+
+# Local faster-whisper settings
 VC_TRANSCRIPTION_ENABLED = os.getenv('VC_TRANSCRIPTION_ENABLED', 'true').lower() == 'true'
 VC_TRANSCRIPTION_MODEL = os.getenv('VC_TRANSCRIPTION_MODEL', 'base')
 VC_TRANSCRIPTION_COMPUTE_TYPE = os.getenv('VC_TRANSCRIPTION_COMPUTE_TYPE', 'int8')
+
+# Deepgram settings (optional)
+DEEPGRAM_API_KEY = os.getenv('DEEPGRAM_API_KEY', '').strip()
+DEEPGRAM_MODEL = os.getenv('DEEPGRAM_MODEL', 'nova-2').strip()
 
 # ============================================================================
 # DEVELOPER SETTINGS

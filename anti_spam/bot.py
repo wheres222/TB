@@ -34,7 +34,7 @@ import os
 # ============================================================================
 
 # === Bot Token ===
-BOT_TOKEN = 'MTQ1MjcyNjMwNTkyNDU3OTM3OA.GiThLz.03NXpCKlbCucABsWu60UwGt3a1sI8_umge6lbs'  # Get from discord.com/developers/applications
+BOT_TOKEN = os.getenv('BOT_TOKEN', 'YOUR_BOT_TOKEN_HERE')  # Get from discord.com/developers/applications
 
 # === API Keys (Optional - for AI features) ===
 GROQ_API_KEY = ''  # Get free at console.groq.com
