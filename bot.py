@@ -82,6 +82,42 @@ def get_whisper_model() -> Optional[WhisperModel]:
     return _WHISPER_MODEL
 
 
+def build_vc_channel_overwrites(guild: discord.Guild) -> dict:
+    """Build VC control channel permissions with privacy defaults."""
+    private_mode = getattr(config, "VC_CONTROL_CHANNEL_PRIVATE", True)
+    allowed_role_names = set(getattr(config, "VC_CONTROL_ALLOWED_ROLE_NAMES", []))
+
+    if not private_mode:
+        return {
+            guild.default_role: discord.PermissionOverwrite(view_channel=True, send_messages=True)
+        }
+
+    overwrites = {
+        guild.default_role: discord.PermissionOverwrite(view_channel=False, send_messages=False),
+        guild.me: discord.PermissionOverwrite(
+            view_channel=True,
+            send_messages=True,
+            manage_messages=True,
+            embed_links=True,
+            read_message_history=True,
+        ),
+    }
+
+    # Allow configured roles (or fallback to mod roles)
+    if not allowed_role_names:
+        allowed_role_names = set(getattr(config, "MOD_ROLE_NAMES", []))
+
+    for role in guild.roles:
+        if role.name in allowed_role_names:
+            overwrites[role] = discord.PermissionOverwrite(
+                view_channel=True,
+                send_messages=True,
+                read_message_history=True,
+            )
+
+    return overwrites
+
+
 def build_vc_status_embed(session: dict) -> discord.Embed:
     is_active = bool(session.get("active"))
     status_text = "ðŸŸ¢ Currently Listening" if is_active else "âšª Currently Idle"
@@ -151,6 +187,19 @@ async def generate_vc_summary(messages: list[str], transcript_lines: list[str]) 
         description=fallback,
         color=discord.Color.blue()
     )
+
+
+async def delete_message_later(message: discord.Message, delay_seconds: int):
+    if delay_seconds <= 0:
+        return
+
+    await asyncio.sleep(delay_seconds)
+    try:
+        await message.delete()
+    except (discord.NotFound, discord.Forbidden):
+        pass
+    except Exception:
+        pass
 
 
 if VC_SUPPORTED:
@@ -439,16 +488,18 @@ class TenBot(commands.Bot):
             traceback.print_exc()
 
     async def ensure_vc_control_channel(self, guild: discord.Guild) -> discord.TextChannel:
+        desired_overwrites = build_vc_channel_overwrites(guild)
         existing = discord.utils.get(guild.text_channels, name="vc-summarizer")
         if existing:
+            try:
+                await existing.edit(overwrites=desired_overwrites, reason="Apply VC privacy policy")
+            except Exception:
+                pass
             return existing
 
-        overwrites = {
-            guild.default_role: discord.PermissionOverwrite(view_channel=True, send_messages=True)
-        }
         return await guild.create_text_channel(
             "vc-summarizer",
-            overwrites=overwrites,
+            overwrites=desired_overwrites,
             reason="Voice summarizer control channel"
         )
 
@@ -549,16 +600,32 @@ class TenBot(commands.Bot):
         if config.VC_TRANSCRIPTION_ENABLED and sink and VC_SUPPORTED:
             transcript_lines = await transcribe_audio_buffers(sink.buffers, guild)
 
-        session["active"] = False
-        self.vc_sessions[guild.id] = session
-        await self.ensure_vc_control_message(guild)
-
+        # Build summary before clearing session buffers.
         summary = await generate_vc_summary(
             session.get("messages", []),
             transcript_lines
         )
+
+        auto_delete_minutes = max(0, int(getattr(config, "VC_SUMMARY_AUTO_DELETE_MINUTES", 0)))
+        if auto_delete_minutes > 0:
+            summary.set_footer(text=f"Auto-deletes in {auto_delete_minutes} minute(s)")
+
+        # Clear sensitive session data immediately after summary generation.
+        session.update({
+            "active": False,
+            "messages": [],
+            "transcript_lines": [],
+            "audio_sink": None,
+            "stopped_at": datetime.utcnow().isoformat(),
+        })
+        self.vc_sessions[guild.id] = session
+        await self.ensure_vc_control_message(guild)
+
         control_channel = await self.ensure_vc_control_channel(guild)
-        await control_channel.send(embed=summary)
+        summary_message = await control_channel.send(embed=summary)
+
+        if auto_delete_minutes > 0:
+            asyncio.create_task(delete_message_later(summary_message, auto_delete_minutes * 60))
 
         await interaction.followup.send("âœ… Stopped listening and posted summary.", ephemeral=True)
 
@@ -819,15 +886,15 @@ async def on_message(message: discord.Message):
         await db.create_user(user_id, message.author.name, message.author.display_name)
 
     session = bot.vc_sessions.get(message.guild.id)
-    if session and session.get("active"):
+    if session and session.get("active") and getattr(config, "VC_CAPTURE_TEXT_MESSAGES", False):
         voice_channel_id = session.get("voice_channel_id")
         if voice_channel_id:
             voice_channel = message.guild.get_channel(voice_channel_id)
-            if voice_channel and message.author in voice_channel.members:
+            if voice_channel and message.author in voice_channel.members and message.content.strip():
                 session.setdefault("messages", []).append(
-                    f"{message.author.display_name}: {message.content}"
+                    f"{message.author.display_name}: {message.content.strip()}"
                 )
-                session["messages"] = session["messages"][-500:]
+                session["messages"] = session["messages"][-300:]
 
     # ====== SPAM DETECTION ======
     is_spam, spam_type, reason = await bot.spam_detector.check_message(message)

@@ -372,6 +372,18 @@ VC_TRANSCRIPTION_COMPUTE_TYPE = os.getenv('VC_TRANSCRIPTION_COMPUTE_TYPE', 'int8
 DEEPGRAM_API_KEY = os.getenv('DEEPGRAM_API_KEY', '').strip()
 DEEPGRAM_MODEL = os.getenv('DEEPGRAM_MODEL', 'nova-2').strip()
 
+# VC privacy controls
+VC_CONTROL_CHANNEL_PRIVATE = os.getenv('VC_CONTROL_CHANNEL_PRIVATE', 'true').lower() == 'true'
+VC_CONTROL_ALLOWED_ROLE_NAMES = [
+    role.strip() for role in os.getenv(
+        'VC_CONTROL_ALLOWED_ROLE_NAMES',
+        'Admin,Moderator,Server Manager'
+    ).split(',')
+    if role.strip()
+]
+VC_CAPTURE_TEXT_MESSAGES = os.getenv('VC_CAPTURE_TEXT_MESSAGES', 'false').lower() == 'true'
+VC_SUMMARY_AUTO_DELETE_MINUTES = int(os.getenv('VC_SUMMARY_AUTO_DELETE_MINUTES', '30'))
+
 # ============================================================================
 # DEVELOPER SETTINGS
 # ============================================================================
@@ -397,6 +409,9 @@ def validate_config():
 
     if XP_PER_LEVEL < 1:
         errors.append("XP_PER_LEVEL must be positive")
+
+    if VC_SUMMARY_AUTO_DELETE_MINUTES < 0:
+        errors.append("VC_SUMMARY_AUTO_DELETE_MINUTES cannot be negative")
 
     return errors
 

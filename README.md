@@ -121,7 +121,7 @@ GROQ_API_KEY=
 AI_SUMMARY_MODEL=llama-3.1-70b-versatile
 
 # Voice STT
-STT_PROVIDER=local            # local or deepgram
+STT_PROVIDER=deepgram         # deepgram (API) or local (faster-whisper)
 VC_TRANSCRIPTION_ENABLED=true
 VC_TRANSCRIPTION_MODEL=base
 VC_TRANSCRIPTION_COMPUTE_TYPE=int8
@@ -129,6 +129,12 @@ VC_TRANSCRIPTION_COMPUTE_TYPE=int8
 # Only if STT_PROVIDER=deepgram
 DEEPGRAM_API_KEY=
 DEEPGRAM_MODEL=nova-2
+
+# Privacy controls
+VC_CONTROL_CHANNEL_PRIVATE=true
+VC_CONTROL_ALLOWED_ROLE_NAMES=Admin,Moderator,Server Manager
+VC_CAPTURE_TEXT_MESSAGES=false
+VC_SUMMARY_AUTO_DELETE_MINUTES=30
 ```
 
 ### 3. Configuration
