@@ -71,7 +71,7 @@ class AdminCommands(commands.Cog):
         spam_blocked = await db.fetch_value("SELECT COUNT(*) FROM message_history WHERE is_spam = 1")
 
         # Image stats
-        image_detector = get_image_detector()
+        image_detector = await get_image_detector()
         image_stats = await image_detector.get_image_stats()
 
         # Spam stats

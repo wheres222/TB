@@ -949,16 +949,15 @@ async def on_message(message: discord.Message):
 
     # ====== GAMIFICATION ======
     if config.FEATURES['gamification']:
-        # Update daily streak
-        await bot.enhanced_gamification.update_daily_streak(user_id)
-
         # Award XP
         await handle_xp_gain(message.author, message.guild, 'message')
 
-        # Check message milestones
-        user_data = await db.get_user(user_id)
-        total_messages = user_data.get('total_messages', 0) if user_data else 0
-        await bot.enhanced_gamification.check_milestone(user_id, 'messages', total_messages)
+        # Check gamification milestones if supported by current module version.
+        if hasattr(bot.enhanced_gamification, 'check_milestones'):
+            try:
+                await bot.enhanced_gamification.check_milestones(user_id)
+            except Exception as e:
+                print(f"⚠️ check_milestones failed for {user_id}: {e}")
 
     # Process commands
     await bot.process_commands(message)
@@ -1054,10 +1053,12 @@ async def on_voice_state_update(
                 xp_amount = int(duration_minutes) * config.XP_PER_VOICE_MINUTE
                 await handle_xp_gain(member, member.guild, 'voice', xp_amount)
 
-                # Check voice milestone
-                user_data = await db.get_user(user_id)
-                total_voice = user_data.get('total_voice_minutes', 0) if user_data else 0
-                await bot.enhanced_gamification.check_milestone(user_id, 'voice_minutes', total_voice)
+                # Refresh milestones if supported by current module version.
+                if hasattr(bot.enhanced_gamification, 'check_milestones'):
+                    try:
+                        await bot.enhanced_gamification.check_milestones(user_id)
+                    except Exception as e:
+                        print(f"⚠️ check_milestones failed for {user_id}: {e}")
 
 
 # ============================================================================
@@ -1385,8 +1386,12 @@ async def handle_xp_gain(
     if result['leveled_up']:
         await handle_level_up(user, guild, result['old_level'], result['new_level'])
 
-    # Check for XP milestones
-    await bot.enhanced_gamification.check_milestone(user_id, 'xp', result['total_xp'])
+    # Refresh milestones if supported by current module version.
+    if hasattr(bot.enhanced_gamification, 'check_milestones'):
+        try:
+            await bot.enhanced_gamification.check_milestones(user_id)
+        except Exception as e:
+            print(f"⚠️ check_milestones failed for {user_id}: {e}")
 
     # Check for badges based on activity
     await check_and_award_badges(user, guild)
