@@ -344,7 +344,8 @@ class VCSummaryControlView(discord.ui.View):
     @discord.ui.button(
         label="Start Listening",
         style=discord.ButtonStyle.success,
-        emoji="â–¶ï¸"
+        emoji="â–¶ï¸",
+        custom_id="vc_summary:start"
     )
     async def start_listening(
         self,
@@ -356,7 +357,8 @@ class VCSummaryControlView(discord.ui.View):
     @discord.ui.button(
         label="Stop Listening",
         style=discord.ButtonStyle.danger,
-        emoji="â¹ï¸"
+        emoji="â¹ï¸",
+        custom_id="vc_summary:stop"
     )
     async def stop_listening(
         self,
@@ -411,7 +413,7 @@ class TenBot(commands.Bot):
 
         # Initialize modules
         self.spam_detector = get_spam_detector()
-        self.image_detector = get_image_detector()
+        self.image_detector = await get_image_detector()
         self.trust_system = get_trust_system()
         self.reputation_system = get_reputation_system()
         self.analytics_system = get_analytics_system()
@@ -425,7 +427,7 @@ class TenBot(commands.Bot):
         # Load moderation commands
         try:
             from commands.mod_commands import ModerationCommands
-            await self.add_cog(ModerationCommands(self))
+            await self.add_cog(ModerationCommands(self), override=True)
             print("  âœ… ModerationCommands loaded")
         except Exception as e:
             print(f"  âŒ Failed to load ModerationCommands: {e}")
@@ -437,7 +439,7 @@ class TenBot(commands.Bot):
         # Load admin commands
         try:
             from commands.admin_commands import AdminCommands
-            await self.add_cog(AdminCommands(self))
+            await self.add_cog(AdminCommands(self), override=True)
             print("  âœ… AdminCommands loaded")
         except Exception as e:
             print(f"  âŒ Failed to load AdminCommands: {e}")
@@ -447,7 +449,7 @@ class TenBot(commands.Bot):
         # Load analytics commands
         try:
             from commands.analytics_commands import AnalyticsReputationCommands
-            await self.add_cog(AnalyticsReputationCommands(self))
+            await self.add_cog(AnalyticsReputationCommands(self), override=True)
             print("  âœ… AnalyticsReputationCommands loaded")
         except Exception as e:
             print(f"  âŒ Failed to load AnalyticsReputationCommands: {e}")
@@ -457,7 +459,7 @@ class TenBot(commands.Bot):
         # Load gamification commands
         try:
             from commands.gamification_commands import GamificationCommands
-            await self.add_cog(GamificationCommands(self))
+            await self.add_cog(GamificationCommands(self), override=True)
             print("  âœ… GamificationCommands loaded")
         except Exception as e:
             print(f"  âŒ Failed to load GamificationCommands: {e}")
@@ -671,7 +673,9 @@ class TenBot(commands.Bot):
             await self.db.close()
 
         if self.image_detector:
-            await self.image_detector.close()
+            close_result = self.image_detector.close()
+            if asyncio.iscoroutine(close_result):
+                await close_result
 
         await super().close()
 
