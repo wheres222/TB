@@ -107,13 +107,24 @@ def build_vc_channel_overwrites(guild: discord.Guild) -> dict:
     if not allowed_role_names:
         allowed_role_names = set(getattr(config, "MOD_ROLE_NAMES", []))
 
+    matched_roles = 0
     for role in guild.roles:
-        if role.name in allowed_role_names:
+        has_admin_perms = role.permissions.administrator or role.permissions.manage_guild
+        if role.name in allowed_role_names or has_admin_perms:
             overwrites[role] = discord.PermissionOverwrite(
                 view_channel=True,
                 send_messages=True,
                 read_message_history=True,
             )
+            matched_roles += 1
+
+    # Ensure at least owner can access even if no role names match.
+    if matched_roles == 0 and guild.owner:
+        overwrites[guild.owner] = discord.PermissionOverwrite(
+            view_channel=True,
+            send_messages=True,
+            read_message_history=True,
+        )
 
     return overwrites
 
